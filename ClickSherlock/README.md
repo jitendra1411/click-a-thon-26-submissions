@@ -27,15 +27,15 @@ MCP server.
 
 ## Hosted Demo
 
-Demo ![Video Link](https://drive.google.com/file/d/1odpNiZtPy-B2HBkvTHXtePzSYjB7lhRZ/view?usp=drive_link)
+Demo [Video Link](https://drive.google.com/file/d/1odpNiZtPy-B2HBkvTHXtePzSYjB7lhRZ/view?usp=drive_link)
 
 ## Demo Video
 
-Demo ![Video Link](https://drive.google.com/file/d/1odpNiZtPy-B2HBkvTHXtePzSYjB7lhRZ/view?usp=drive_link)
+Demo [Video Link](https://drive.google.com/file/d/1odpNiZtPy-B2HBkvTHXtePzSYjB7lhRZ/view?usp=drive_link)
 
 ## Slide Deck
 
-Link to ![Slide Deck](https://docs.google.com/presentation/d/1n3LO8HVB2DO51vKwJ_d5lqcdb4M7a0-W/edit?slide=id.g3f6284a59a0_0_342#slide=id.g3f6284a59a0_0_342)
+Link to [Slide Deck](https://docs.google.com/presentation/d/1n3LO8HVB2DO51vKwJ_d5lqcdb4M7a0-W/edit?slide=id.g3f6284a59a0_0_342#slide=id.g3f6284a59a0_0_342)
 
 ## Product screenshots
 
