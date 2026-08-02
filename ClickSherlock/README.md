@@ -25,6 +25,20 @@ KPIs for long ranges, multi-dimensional filters, and answers the same
 questions conversationally through a LibreChat agent backed by a ClickHouse
 MCP server.
 
+## Hosted Demo
+
+> ⏳ **Link coming soon** — the live dashboard will be hosted here (drive
+> link acceptable). Demo will cover: the concurrency curve, filters, and the
+> LibreChat agent in action.
+
+## Demo Video
+
+> ⏳ Link to the recorded 2–3 minute demo (placeholder).
+
+## Slide Deck
+
+Link to ![Slide Deck](https://docs.google.com/presentation/d/1n3LO8HVB2DO51vKwJ_d5lqcdb4M7a0-W/edit?slide=id.g3f6284a59a0_0_342#slide=id.g3f6284a59a0_0_342)
+
 ## Product screenshots
 
 ### Dashboard — concurrency over time (sessions vs unique users)
@@ -42,20 +56,6 @@ MCP server.
 ### Peak by weekday × hour (heatmap)
 
 ![Peak by weekday and hour](screenshots/peak_weekday_by_hour_heatmap.png)
-
-## Hosted Demo
-
-> ⏳ **Link coming soon** — the live dashboard will be hosted here (drive
-> link acceptable). Demo will cover: the concurrency curve, filters, and the
-> LibreChat agent in action.
-
-## Demo Video
-
-> ⏳ Link to the recorded 2–3 minute demo (placeholder).
-
-## Slide Deck
-
-Link to ![Slide Deck](https://docs.google.com/presentation/d/1n3LO8HVB2DO51vKwJ_d5lqcdb4M7a0-W/edit?slide=id.g3f6284a59a0_0_342#slide=id.g3f6284a59a0_0_342)
 
 
 ## Architecture
