@@ -28,10 +28,13 @@ MCP server.
 ## Hosted Demo
 
 Demo [Video Link](https://drive.google.com/file/d/1odpNiZtPy-B2HBkvTHXtePzSYjB7lhRZ/view?usp=drive_link)
+Libre Chat [Video](https://drive.google.com/file/d/1eeuswcDHL7LB0_au58Yx-TpCmM4PyHDk/view?usp=drive_link)
 
 ## Demo Video
 
 Demo [Video Link](https://drive.google.com/file/d/1odpNiZtPy-B2HBkvTHXtePzSYjB7lhRZ/view?usp=drive_link)
+Libre Chat [Video](https://drive.google.com/file/d/1eeuswcDHL7LB0_au58Yx-TpCmM4PyHDk/view?usp=drive_link)
+
 
 ## Slide Deck
 
