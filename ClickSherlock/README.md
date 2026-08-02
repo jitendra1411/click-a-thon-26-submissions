@@ -25,6 +25,24 @@ KPIs for long ranges, multi-dimensional filters, and answers the same
 questions conversationally through a LibreChat agent backed by a ClickHouse
 MCP server.
 
+## Product screenshots
+
+### Dashboard — concurrency over time (sessions vs unique users)
+
+![Dashboard view](screenshots/dashboard_view.png)
+
+### Dashboard — filtering by dimension (e.g. platform)
+
+![Filter by dimension](screenshots/dashboard_filter_by_dimension.png)
+
+### Concurrency curve (exact, minute grain)
+
+![Concurrency over time](screenshots/concurrency_over_time.png)
+
+### Peak by weekday × hour (heatmap)
+
+![Peak by weekday and hour](screenshots/peak_weekday_by_hour_heatmap.png)
+
 ## Hosted Demo
 
 > ⏳ **Link coming soon** — the live dashboard will be hosted here (drive
@@ -37,7 +55,13 @@ MCP server.
 
 ## Architecture
 
-ClickHouse-native medallion pipeline (no Python orchestrator):
+ClickHouse-native medallion pipeline :
+
+![Architecture diagram](screenshots/architecture_diagram.jpeg)
+
+### State machine — independent state transitions
+
+![State transition model](screenshots/state_transition.jpeg)
 
 ```mermaid
 flowchart TB
@@ -70,6 +94,45 @@ Full detail: [architecture_overview.md](architecture_overview.md) and the
   ClickHouse MCP server (integration committed with redacted secrets).
 - **UI**: dependency-free (Python stdlib + vanilla canvas), clickpy-inspired
   yellow/black theme, IST timezone throughout.
+
+### OSS integration — ClickStack & LibreChat
+
+![ClickStack dashboard](screenshots/clickstack_integration.png)
+
+ClickStack observes the pipeline itself: ingestion lag, serving-query
+latency/rows-read, peak concurrency and open sessions flow into its bundled
+ClickHouse `otel_*` tables (the same tables its HyperDX-style UI reads).
+Wiring: `src/integrations/` and the OTel insert path in
+`src/backend/05_refresh.sh` (bash/curl — no Python in the data path).
+
+![LibreChat agent](screenshots/libre_chat_integration_1.png)
+
+LibreChat is the conversational surface over the same Gold serving tables,
+driven by a custom ClickHouse MCP server (tools: `get_concurrency`,
+`get_peak_concurrency_detail`, `compare_concurrency`,
+`get_dashboard_analytics`, `render_dashboard_html`, `get_data_health`,
+`get_query_evidence`). Config + server code committed in
+`src/integrations/librechat-mcp/` with secrets redacted.
+
+### Ingestion — bring events in any way you like
+
+The pipeline is transport-agnostic: everything downstream (enrichment MV,
+state machine, serving) consumes `raw_events` regardless of how rows arrive.
+Pick whichever fits your environment:
+
+- **Kafka** — a `Kafka` table engine lands rows into `raw_events`; the
+  enrichment materialized view fires per insert, exactly as in batch.
+- **Python** — any ClickHouse client (e.g. `clickhouse-connect`,
+  `clickhouse-driver`) inserts batches; schema evolution for new CSV columns
+  is automatic.
+- **Bash / CLI** — `clickhouse-client` (or the included `05_refresh.sh`
+  `--load-raw FILE [DAY]`) handles day-scoped loads directly from a CSV with
+  no intermediate service.
+- **Any OTLP/HTTP writer** — raw events are just INSERTs to one table; the
+  pipeline never cares about the source.
+
+For the demo we used the bash path (`05_refresh.sh`) — no Python
+orchestrator in the data path.
 
 ## Concurrency curve (SonyLIV track requirement)
 
