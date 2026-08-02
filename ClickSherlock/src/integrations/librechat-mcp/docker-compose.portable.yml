@@ -1,0 +1,120 @@
+# Portable slice: MCP servers + LibreChat, pointed at an EXTERNAL ClickHouse
+# you already have running with data loaded. No bundled ClickHouse, no
+# ClickStack, no Langfuse, no Ollama -- just the conversational layer.
+#
+# Use this instead of docker-compose.yml when you don't want the full local
+# stack, e.g. integrating this MCP+LibreChat setup against a ClickHouse
+# you're already running elsewhere (another container, a VM, ClickHouse Cloud).
+#
+#   cp .env.portable.example .env.portable
+#   # edit .env.portable: point CLICKHOUSE_HOST/PORT at your instance
+#   make -f Makefile.portable up
+#
+# See PORTABLE_SETUP.md for the full walkthrough.
+
+name: clickathon-portable
+
+# If your ClickHouse is a Docker container on another compose project,
+# host.docker.internal won't reliably reach it -- attach to its network
+# instead. Set EXTERNAL_CH_NETWORK in .env.portable to that project's network
+# name (`docker network ls`, e.g. "clickathon_default"), then reference
+# ClickHouse by its SERVICE name (e.g. "clickhouse"), not host.docker.internal,
+# in CLICKHOUSE_HOST. Leave EXTERNAL_CH_NETWORK unset for a native/remote
+# ClickHouse -- host.docker.internal or a real hostname works fine there.
+networks:
+  default:
+    name: clickathon-portable_default
+  external-ch:
+    external: true
+    name: ${EXTERNAL_CH_NETWORK:-clickathon-portable_default}
+
+services:
+  # ---------------------------------------------------------------------
+  # Official ClickHouse MCP server -- generic/exploratory SQL.
+  # ---------------------------------------------------------------------
+  mcp-clickhouse-sql:
+    image: mcp/clickhouse:latest
+    container_name: mcp-clickhouse-sql-portable
+    restart: unless-stopped
+    networks: [default, external-ch]
+    environment:
+      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:?set CLICKHOUSE_HOST in .env.portable}
+      CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-default}
+      CLICKHOUSE_SECURE: ${CLICKHOUSE_SECURE:-false}
+      CLICKHOUSE_MCP_SERVER_TRANSPORT: http
+      CLICKHOUSE_MCP_BIND_HOST: 0.0.0.0
+      CLICKHOUSE_MCP_BIND_PORT: "8000"
+    extra_hosts:
+      # Lets the container reach a ClickHouse running on the Docker host
+      # (e.g. a native install, or another compose project's exposed port).
+      # Irrelevant if CLICKHOUSE_HOST points at a real remote hostname.
+      - "host.docker.internal:host-gateway"
+
+  # ---------------------------------------------------------------------
+  # Custom concurrency MCP server -- the judge-approved query shape.
+  # ---------------------------------------------------------------------
+  mcp-sonyliv-concurrency:
+    build: ./mcp
+    container_name: mcp-sonyliv-concurrency-portable
+    restart: unless-stopped
+    networks: [default, external-ch]
+    environment:
+      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:?set CLICKHOUSE_HOST in .env.portable}
+      CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-default}
+      CLICKHOUSE_SECURE: ${CLICKHOUSE_SECURE:-false}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  librechat-mongo:
+    image: mongo:8
+    container_name: librechat-mongo-portable
+    restart: unless-stopped
+    command: mongod --noauth
+    volumes:
+      - librechat_mongo_portable:/data/db
+
+  librechat:
+    image: ghcr.io/danny-avila/librechat:${LIBRECHAT_VERSION:-latest}
+    container_name: librechat-portable
+    restart: unless-stopped
+    depends_on:
+      librechat-mongo: { condition: service_started }
+      mcp-clickhouse-sql: { condition: service_started }
+      mcp-sonyliv-concurrency: { condition: service_started }
+    ports:
+      - "127.0.0.1:${LIBRECHAT_PORT:-3080}:3080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3080
+      MONGO_URI: mongodb://librechat-mongo:27017/LibreChat
+      SEARCH: "false"
+      RAG_API_URL: ""
+      ALLOW_REGISTRATION: "true"
+      ALLOW_EMAIL_LOGIN: "true"
+      CREDS_KEY: ${LC_CREDS_KEY:?run "make -f Makefile.portable secrets" first}
+      CREDS_IV: ${LC_CREDS_IV:?run "make -f Makefile.portable secrets" first}
+      JWT_SECRET: ${LC_JWT_SECRET:?run "make -f Makefile.portable secrets" first}
+      JWT_REFRESH_SECRET: ${LC_JWT_REFRESH_SECRET:?run "make -f Makefile.portable secrets" first}
+      CONFIG_PATH: /app/librechat.yaml
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+    volumes:
+      - ./librechat/librechat.yaml:/app/librechat.yaml:ro
+      - librechat_images_portable:/app/client/public/images
+      - librechat_uploads_portable:/app/uploads
+      - librechat_logs_portable:/app/logs
+
+volumes:
+  librechat_mongo_portable:
+  librechat_images_portable:
+  librechat_uploads_portable:
+  librechat_logs_portable:

@@ -1,0 +1,98 @@
+# LibreChat config. Mounted read-only at /app/librechat.yaml.
+# Full reference: https://www.librechat.ai/docs/configuration/librechat_yaml
+#
+# The conversational layer over ClickHouse is `mcpServers` below, not a
+# custom endpoint: LibreChat's Agents feature can call MCP tools directly,
+# so a tool-calling model (Claude, GPT) answers "peak concurrency on Android
+# in the last hour?" by calling get_concurrency itself. Build an Agent in the
+# UI (Agents icon -> New Agent), pick a tool-calling model, and enable both
+# MCP servers in its tool picker.
+
+version: 1.2.1
+cache: true
+
+interface:
+  # Trim the UI to what you'll actually demo on stage.
+  endpointsMenu: true
+  modelSelect: true
+  parameters: true
+  presets: true
+  sidePanel: true
+  agents: true
+  # Off by default in LibreChat. Needed for the Section 10 "minimal
+  # visualization" demo: without this, a model that writes a React/HTML
+  # chart component gets it rendered as a plain code block instead of in
+  # the artifact side panel. Requires a model that reliably emits the
+  # ```typescript/tsx or ```html fenced-code artifact convention --
+  # DeepSeek and Claude follow it; qwen2.5:3b via Ollama is unreliable at it.
+  artifacts: true
+
+# LibreChat's SSRF guard blocks MCP URLs that don't resolve to a public IP
+# unless their hostname is explicitly allowlisted here -- our two MCP
+# containers are private compose-network hostnames, so they need to be listed.
+mcpSettings:
+  allowedDomains:
+    - mcp-clickhouse-sql
+    - mcp-sonyliv-concurrency
+
+mcpServers:
+  # Official ClickHouse MCP server -- generic/exploratory SQL (run_query,
+  # list_tables, list_databases). Read-only by default. Runs as its own
+  # container (mcp-clickhouse-sql in docker-compose.yml), reachable over
+  # HTTP on the compose network -- not spawned in-process by LibreChat.
+  clickhouse-sql:
+    type: streamable-http
+    url: http://mcp-clickhouse-sql:8000/mcp
+    timeout: 60000
+
+  # Your custom server -- the canonical, always-correct concurrency query
+  # (get_concurrency) plus the alerts feed (get_recent_alerts). Also its own
+  # container (mcp-sonyliv-concurrency), built from ../mcp/Dockerfile.
+  sonyliv-concurrency:
+    type: streamable-http
+    url: http://mcp-sonyliv-concurrency:8765/mcp
+    timeout: 60000
+
+endpoints:
+  custom:
+    # DeepSeek is OpenAI-wire-compatible but is NOT api.openai.com, so it
+    # can't just go in OPENAI_API_KEY -- it needs its own baseURL. deepseek-chat
+    # supports function calling, which is what lets the Agent actually call
+    # get_concurrency / get_recent_alerts instead of just describing them.
+    - name: "DeepSeek"
+      apiKey: "${DEEPSEEK_API_KEY}"
+      baseURL: "https://api.deepseek.com/v1"
+      models:
+        default: ["deepseek-chat"]
+        fetch: false
+      titleConvo: true
+      titleModel: "deepseek-chat"
+      modelDisplayLabel: "DeepSeek"
+
+    # Local, no API key needed. Runs in the `ollama` container (see
+    # docker-compose.yml), reachable by its compose-network hostname --
+    # not host.docker.internal, since Ollama is now one of our own services
+    # rather than something running on the host. qwen2.5 supports OpenAI-style
+    # function calling, so it can drive the MCP tools directly.
+    #
+    # 3b, not the default 7b: this VM (Colima, 4 CPU / 7.7GB) loads models
+    # over a virtualized filesystem with no mmap speedup, so the 7b model
+    # blew past Ollama's 5-15min load timeout. 3b loads in ~7s and still
+    # tool-calls correctly -- verified against a real tool schema.
+    - name: "Ollama"
+      apiKey: "ollama"
+      baseURL: "http://ollama:11434/v1"
+      models:
+        default: ["qwen2.5:3b"]
+        fetch: true
+      titleConvo: true
+      titleModel: "qwen2.5:3b"
+      modelDisplayLabel: "Ollama (qwen2.5:3b)"
+      # Ollama tested fine standing alone (verified via curl: valid
+      # tool_calls every time, even with all 5 tool schemas), but through
+      # LibreChat's Agents framework the response comes back as an empty
+      # message -- a known streaming tool-call chunk-assembly mismatch
+      # between Ollama's OpenAI-compat SSE format and OpenAI's own. Forcing
+      # non-streaming completions avoids that assembly path entirely.
+      addParams:
+        stream: false

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SonyLIV - Foreground-Only Concurrency</title>
+  <link rel="stylesheet" href="style.css?v=7">
+</head>
+<body>
+  <header>
+    <div class="brandlock">
+      <img src="ch_logo.svg" alt="ClickHouse" id="ch-logo">
+      <h1>SonyLIV · Foreground-Only Concurrency <span class="brand">on ClickHouse</span></h1>
+    </div>
+    <label class="sol-switch">Solution
+      <select id="sol-select">
+        <option value="v1">v1 · Python day-scoped</option>
+        <option value="v2">v2 · ClickHouse-native</option>
+      </select>
+    </label>
+    <div id="controls">
+      <label>From (IST) <input type="datetime-local" id="f-from"></label>
+      <label>To (IST) <input type="datetime-local" id="f-to"></label>
+      <label>Grain
+        <span class="grain-pair">
+          <select id="f-grain-n">
+            <option value="1">1</option>
+            <option value="5">5</option>
+            <option value="15">15</option>
+            <option value="30">30</option>
+            <option value="60" selected>60</option>
+          </select>
+          <select id="f-grain-u">
+            <option value="m" selected>min</option>
+            <option value="h">hr</option>
+            <option value="d">day</option>
+          </select>
+        </span>
+      </label>
+      <label>Platform <span class="msel" id="f-platform"></span></label>
+      <label>Country <span class="msel" id="f-country"></span></label>
+      <label>Video type <span class="msel" id="f-vtype"></span></label>
+      <label>Content <select id="f-content"></select></label>
+      <button id="f-apply">Apply</button>
+    </div>
+  </header>
+
+  <section id="kpis">
+    <div class="card"><span class="k">Peak concurrency</span><span class="v" id="k-peak">-</span><span class="s" id="k-peak-min">-</span><canvas id="c-spark"></canvas></div>
+    <div class="card"><span class="k">Peak unique users</span><span class="v" id="k-users">-</span></div>
+    <div class="card"><span class="k">Average concurrency</span><span class="v" id="k-avg">-</span></div>
+    <div class="card"><span class="k">As of (latest)</span><span class="v" id="k-latest">-</span><span class="s" id="k-latest-min">-</span></div>
+    <div class="card"><span class="k">Open sessions</span><span class="v" id="k-open">-</span></div>
+    <div class="card"><span class="k">Series points</span><span class="v" id="k-points">-</span></div>
+  </section>
+
+  <section class="row">
+    <div class="panel wide">
+      <h2>Concurrency over time (sessions vs unique users)
+        <a class="ai-btn" href="http://localhost:3080" target="_blank" title="Open LibreChat — ask about peaks, declines, platforms and more">
+          ✦ Advanced Analytics with AI
+        </a>
+      </h2>
+      <canvas id="c-series"></canvas>
+    </div>
+  </section>
+
+  <section class="row">
+    <div class="panel">
+      <h2>Peak by platform</h2>
+      <canvas id="c-platform"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Peak by video type</h2>
+      <canvas id="c-vtype"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Peak by weekday × hour</h2>
+      <canvas id="c-heatmap"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Top contents by peak</h2>
+      <table id="t-content"><thead><tr><th>Title</th><th>Peak</th><th>Peak minute (IST)</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <footer>Data: <span id="src-label">minute_sessions (exact)</span> · Times shown in <span id="tz-label" class="brand">IST (Asia/Kolkata)</span> · Loaded <span id="cov-label">…</span> · <span id="f-error"></span></footer>
+  <script src="charts.js?v=12"></script>
+  <script src="app.js?v=12"></script>
+</body>
+</html>

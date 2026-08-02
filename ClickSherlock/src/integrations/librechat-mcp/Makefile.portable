@@ -1,0 +1,96 @@
+# Portable entrypoint: MCP servers + LibreChat only, against a ClickHouse
+# you already have running elsewhere with data loaded.
+#
+#   cp .env.portable.example .env.portable   # then edit CLICKHOUSE_* values
+#   make -f Makefile.portable secrets
+#   make -f Makefile.portable up
+#   make -f Makefile.portable verify         # confirm the MCP tools can reach your data
+#
+# See PORTABLE_SETUP.md for the full walkthrough.
+
+COMPOSE_FILE := docker-compose.portable.yml
+ENV_FILE     := .env.portable
+COMPOSE      := docker compose -f $(COMPOSE_FILE) --env-file $(ENV_FILE)
+
+.PHONY: help
+help:
+	@echo "make -f Makefile.portable init      copy .env.portable.example -> .env.portable"
+	@echo "make -f Makefile.portable secrets   generate the 4 required LibreChat secrets"
+	@echo "make -f Makefile.portable up        start MCP servers + LibreChat"
+	@echo "make -f Makefile.portable verify    confirm the MCP tools can query your ClickHouse"
+	@echo "make -f Makefile.portable down      stop, keep data"
+	@echo "make -f Makefile.portable logs      tail all services (S=<name> for one)"
+	@echo "make -f Makefile.portable urls      print where LibreChat is listening"
+
+.PHONY: init
+init:
+	@test -f $(ENV_FILE) || cp .env.portable.example $(ENV_FILE)
+	@echo "Edit $(ENV_FILE): set CLICKHOUSE_HOST/PORT/USER/PASSWORD/DATABASE to your instance."
+	@echo "Then: make -f Makefile.portable secrets && make -f Makefile.portable up"
+
+## secrets: fill LC_CREDS_KEY (64 hex), LC_CREDS_IV (32 hex), LC_JWT_SECRET
+## and LC_JWT_REFRESH_SECRET in .env.portable, without clobbering values
+## that are already set.
+.PHONY: secrets
+secrets: guard-env-file
+	@for pair in "LC_CREDS_KEY:32" "LC_CREDS_IV:16" "LC_JWT_SECRET:32" "LC_JWT_REFRESH_SECRET:32"; do \
+		key=$${pair%%:*}; bytes=$${pair##*:}; \
+		if grep -qE "^$${key}=\S" $(ENV_FILE); then \
+			echo "$${key} already set, skipping"; \
+		else \
+			value=$$(openssl rand -hex $${bytes}); \
+			if grep -qE "^$${key}=" $(ENV_FILE); then \
+				sed -i.bak "s|^$${key}=.*|$${key}=$${value}|" $(ENV_FILE) && rm -f $(ENV_FILE).bak; \
+			else \
+				echo "$${key}=$${value}" >> $(ENV_FILE); \
+			fi; \
+			echo "$${key} generated"; \
+		fi; \
+	done
+
+.PHONY: up
+up: guard-env-file
+	$(COMPOSE) up -d --build
+	@echo ""
+	@port=$$(sed -n 's/^LIBRECHAT_PORT=//p' $(ENV_FILE) | tail -1); \
+	echo "LibreChat:  http://localhost:$${port:-3080}"
+	@echo "Register an account, then Agents -> New Agent -> enable both MCP"
+	@echo "servers in the tool picker."
+
+.PHONY: down
+down:
+	$(COMPOSE) down
+
+.PHONY: logs
+logs:
+	$(COMPOSE) logs -f $(S)
+
+.PHONY: urls
+urls:
+	@port=$$(sed -n 's/^LIBRECHAT_PORT=//p' $(ENV_FILE) 2>/dev/null | tail -1); \
+	echo "LibreChat: http://localhost:$${port:-3080}"
+
+## verify: prove the custom MCP server can actually reach and read your
+## ClickHouse -- i.e. that CLICKHOUSE_HOST/PORT/USER/PASSWORD/DATABASE in
+## .env.portable are correct, before you go looking for the problem in
+## LibreChat's tool-calling instead.
+.PHONY: verify
+verify: guard-env-file
+	$(COMPOSE) exec -T mcp-sonyliv-concurrency python3 -c "\
+	import os, clickhouse_connect; \
+	c = clickhouse_connect.get_client( \
+	    host=os.environ['CLICKHOUSE_HOST'], \
+	    port=int(os.environ.get('CLICKHOUSE_PORT', 8123)), \
+	    username=os.environ.get('CLICKHOUSE_USER', 'default'), \
+	    password=os.environ.get('CLICKHOUSE_PASSWORD', ''), \
+	    database=os.environ.get('CLICKHOUSE_DATABASE', 'default'), \
+	    secure=os.environ.get('CLICKHOUSE_SECURE', 'false').lower() == 'true'); \
+	tables = [r[0] for r in c.query('SHOW TABLES').result_rows]; \
+	print('Connected. Tables visible:', tables); \
+	needed = {'session_intervals', 'concurrency_deltas_minute'}; \
+	missing = needed - set(tables); \
+	print('MISSING (get_concurrency will fail):', missing) if missing else print('Required serving tables present.')"
+
+.PHONY: guard-env-file
+guard-env-file:
+	@test -f $(ENV_FILE) || { echo "Missing $(ENV_FILE). Run: make -f Makefile.portable init"; exit 1; }
