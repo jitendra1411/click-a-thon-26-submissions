@@ -103,8 +103,10 @@ driven by a custom ClickHouse MCP server (tools: `get_concurrency`,
 ClickStack observes the pipeline itself: ingestion lag, serving-query
 latency/rows-read, peak concurrency and open sessions flow into its bundled
 ClickHouse `otel_*` tables (the same tables its HyperDX-style UI reads).
-Wiring: `src/integrations/` and the OTel insert path in
-`src/backend/05_refresh.sh` (bash/curl — no Python in the data path).
+Wiring: [`src/integrations/clickstack/`](src/integrations/clickstack/) —
+compose service, metrics user, and the OTel insert script; it writes to
+ClickStack's own ClickHouse `default.otel_metrics_gauge` /
+`default.otel_logs` (36,061 gauge rows / 16 log rows captured live).
 
 ### Ingestion — bring events in any way you like
 

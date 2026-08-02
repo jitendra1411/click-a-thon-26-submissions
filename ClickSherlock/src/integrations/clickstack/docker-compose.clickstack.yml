@@ -1,0 +1,21 @@
+  clickstack:
+    image: clickhouse/clickstack-all-in-one:${CLICKSTACK_VERSION:-latest}
+    container_name: clickstack
+    profiles: ["obs", "all"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${CLICKSTACK_UI_PORT:-8080}:8080"
+      - "127.0.0.1:${OTLP_GRPC_PORT:-4317}:4317"
+      - "127.0.0.1:${OTLP_HTTP_PORT:-4318}:4318"
+      # Its bundled ClickHouse, remapped off 8123. Needs a password over HTTP -
+      # use `make cs-sql` instead, which authenticates inside the container.
+      - "127.0.0.1:${CLICKSTACK_CH_PORT:-8124}:8123"
+    # The all-in-one takes 3-5 minutes to boot: it starts ClickHouse, MongoDB,
+    # an OTel collector and the HyperDX app, and waits on each in turn.
+    # Its built-in healthcheck reports "starting" for most of that.
+    # environment:
+    #   CLICKHOUSE_ENDPOINT: http://clickhouse:8123
+    #   CLICKHOUSE_USER: ${CH_USER:-default}
+    #   CLICKHOUSE_PASSWORD: ${CH_PASSWORD:-}
+    volumes:
+      - clickstack_app:/data/db

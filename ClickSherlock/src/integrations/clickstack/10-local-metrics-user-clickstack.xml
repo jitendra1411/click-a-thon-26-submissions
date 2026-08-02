@@ -1,0 +1,18 @@
+<!--
+  Local developer user for pipeline telemetry written into ClickStack's
+  bundled ClickHouse (otel_logs / otel_metrics_gauge). Same convention as
+  sonyliv-ch's metrics user; not for production.
+-->
+<clickhouse>
+    <users>
+        <sonyliv_metrics>
+            <password></password>
+            <networks>
+                <ip>::/0</ip>
+            </networks>
+            <profile>default</profile>
+            <quota>default</quota>
+            <access_management>0</access_management>
+        </sonyliv_metrics>
+    </users>
+</clickhouse>
