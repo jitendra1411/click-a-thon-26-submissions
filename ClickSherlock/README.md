@@ -68,8 +68,8 @@ ClickHouse-native medallion pipeline :
 
 ![State transition model](screenshots/state_transition.jpeg)
 
-Full detail: [architecture_overview.md](architecture_overview.md) and the
-10 step-by-step guides in [`src/backend/docs/`](src/backend/docs/).
+## Full detail: [architecture_overview.md](architecture_overview.md) 
+and the step-by-step guides is in [`src/backend/docs/`](src/backend/docs/).
 
 ## How we built it
 
