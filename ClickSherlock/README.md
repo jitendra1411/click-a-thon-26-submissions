@@ -27,13 +27,11 @@ MCP server.
 
 ## Hosted Demo
 
-> ⏳ **Link coming soon** — the live dashboard will be hosted here (drive
-> link acceptable). Demo will cover: the concurrency curve, filters, and the
-> LibreChat agent in action.
+Demo ![Video Link](https://drive.google.com/file/d/1odpNiZtPy-B2HBkvTHXtePzSYjB7lhRZ/view?usp=drive_link)
 
 ## Demo Video
 
-> ⏳ Link to the recorded 2–3 minute demo (placeholder).
+Demo ![Video Link](https://drive.google.com/file/d/1odpNiZtPy-B2HBkvTHXtePzSYjB7lhRZ/view?usp=drive_link)
 
 ## Slide Deck
 
