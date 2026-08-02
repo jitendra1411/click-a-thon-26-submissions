@@ -17,7 +17,7 @@ analytics agent.
 
 ## What it does
 
-`backend` ingests raw SonyLIV playback events (7M events on the unseen day)
+`src/backend` ingests raw SonyLIV playback events (7M events on the unseen day)
 and derives **foreground-only concurrency**: how many sessions/users were
 genuinely watching in each minute — excluding backgrounded, paused, or
 silent sessions. It serves exact per-minute peaks/averages, finalized hourly
