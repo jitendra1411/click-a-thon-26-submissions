@@ -53,6 +53,11 @@ MCP server.
 
 > ⏳ Link to the recorded 2–3 minute demo (placeholder).
 
+## Slide Deck
+
+Link to ![Slide Deck](https://docs.google.com/presentation/d/1n3LO8HVB2DO51vKwJ_d5lqcdb4M7a0-W/edit?slide=id.g3f6284a59a0_0_342#slide=id.g3f6284a59a0_0_342)
+
+
 ## Architecture
 
 ClickHouse-native medallion pipeline :
@@ -62,17 +67,6 @@ ClickHouse-native medallion pipeline :
 ### State machine — independent state transitions
 
 ![State transition model](screenshots/state_transition.jpeg)
-
-```mermaid
-flowchart TB
-    RAW[("raw_events — Bronze")] -->|"materialized view"| ENR[("events_enriched — Silver")]
-    ENR -->|"watermark-driven state machine"| INT[("session_active_intervals")]
-    INT -->|"version-tracked facts"| MIN[("minute_sessions — EXACT")]
-    INT -->|"finalized snapshots"| HOUR[("hourly_kpis")]
-    MIN --> UI["Custom UI (filters + curve + KPIs)"]
-    HOUR --> UI
-    UI --> LC["LibreChat + ClickHouse MCP — conversational analytics"]
-```
 
 Full detail: [architecture_overview.md](architecture_overview.md) and the
 10 step-by-step guides in [`src/backend/docs/`](src/backend/docs/).
@@ -95,15 +89,7 @@ Full detail: [architecture_overview.md](architecture_overview.md) and the
 - **UI**: dependency-free (Python stdlib + vanilla canvas), clickpy-inspired
   yellow/black theme, IST timezone throughout.
 
-### OSS integration — ClickStack & LibreChat
-
-![ClickStack dashboard](screenshots/clickstack_integration.png)
-
-ClickStack observes the pipeline itself: ingestion lag, serving-query
-latency/rows-read, peak concurrency and open sessions flow into its bundled
-ClickHouse `otel_*` tables (the same tables its HyperDX-style UI reads).
-Wiring: `src/integrations/` and the OTel insert path in
-`src/backend/05_refresh.sh` (bash/curl — no Python in the data path).
+### OSS integration — LibreChat+MCP & ClickStack 
 
 ![LibreChat agent](screenshots/libre_chat_integration_1.png)
 
@@ -113,6 +99,14 @@ driven by a custom ClickHouse MCP server (tools: `get_concurrency`,
 `get_dashboard_analytics`, `render_dashboard_html`, `get_data_health`,
 `get_query_evidence`). Config + server code committed in
 `src/integrations/librechat-mcp/` with secrets redacted.
+
+![ClickStack dashboard](screenshots/clickstack_integration.png)
+
+ClickStack observes the pipeline itself: ingestion lag, serving-query
+latency/rows-read, peak concurrency and open sessions flow into its bundled
+ClickHouse `otel_*` tables (the same tables its HyperDX-style UI reads).
+Wiring: `src/integrations/` and the OTel insert path in
+`src/backend/05_refresh.sh` (bash/curl — no Python in the data path).
 
 ### Ingestion — bring events in any way you like
 
